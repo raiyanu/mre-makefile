@@ -1,231 +1,320 @@
-/*****************************************************************************
-*  Copyright Statement:
-*  --------------------
-*  This software is protected by Copyright and the information contained
-*  herein is confidential. The software may not be copied and the information
-*  contained herein may not be used or disclosed except with the written
-*  permission of MediaTek Inc. (C) 2005
-*
-*  BY OPENING THIS FILE, BUYER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
-*  THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
-*  RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO BUYER ON
-*  AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
-*  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
-*  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
-*  NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
-*  SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
-*  SUPPLIED WITH THE MEDIATEK SOFTWARE, AND BUYER AGREES TO LOOK ONLY TO SUCH
-*  THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. MEDIATEK SHALL ALSO
-*  NOT BE RESPONSIBLE FOR ANY MEDIATEK SOFTWARE RELEASES MADE TO BUYER'S
-*  SPECIFICATION OR TO CONFORM TO A PARTICULAR STANDARD OR OPEN FORUM.
-*
-*  BUYER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND CUMULATIVE
-*  LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
-*  AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
-*  OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY BUYER TO
-*  MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE. 
-*
-*  THE TRANSACTION CONTEMPLATED HEREUNDER SHALL BE CONSTRUED IN ACCORDANCE
-*  WITH THE LAWS OF THE STATE OF CALIFORNIA, USA, EXCLUDING ITS CONFLICT OF
-*  LAWS PRINCIPLES.  ANY DISPUTES, CONTROVERSIES OR CLAIMS ARISING THEREOF AND
-*  RELATED THERETO SHALL BE SETTLED BY ARBITRATION IN SAN FRANCISCO, CA, UNDER
-*  THE RULES OF THE INTERNATIONAL CHAMBER OF COMMERCE (ICC).
-*
-*****************************************************************************/
-
 #include "vmsys.h"
 #include "vmio.h"
 #include "vmgraph.h"
-#include "vmchset.h"
 #include "vmstdlib.h"
-// #include "ResID.h"
-#include "vm4res.h"
-/* ---------------------------------------------------------------------------
-* global variables
-* ------------------------------------------------------------------------ */
+#include "vmchset.h"
 
-/* define this macro if application support background running. */
-#define		SUPPORT_BG		
+#define COLOR_BG    VM_COLOR_BLACK
+#define COLOR_TEXT  VM_COLOR_WHITE
+#define COLOR_SEL   VM_COLOR_GREEN
+#define COLOR_BAR   0xA554
 
+VMINT layer = -1;
+VMWCHAR ucs2[128];
 
-VMINT		layer_hdl[1];	/* layer handle array. */
-
-/* ---------------------------------------------------------------------------
- * local variables
- * ------------------------------------------------------------------------ */
-/*
-* system events 
-*/
-void handle_sysevt(VMINT message, VMINT param);
-
-/*
-* key events 
-*/
-void handle_keyevt(VMINT event, VMINT keycode);
-
-/*
-* pen events
-*/
-void handle_penevt(VMINT event, VMINT x, VMINT y);
-
-/*
-* demo
-*/
-static void draw_hello(void);
-
-/*
-* entry
-*/
-void vm_main(void) {
-	/* initialize layer handle */
-	layer_hdl[0] = -1;	
-	
-	/* register system events handler */
-	vm_reg_sysevt_callback(handle_sysevt);
-	
-	/* register keyboard events handler */
-	vm_reg_keyboard_callback(handle_keyevt);
-	
-	/* register pen events handler */
-	vm_reg_pen_callback(handle_penevt);
-
-	/* Init MRE resource */
-	vm_res_init();
-}
-
-void handle_sysevt(VMINT message, VMINT param) {
-#ifdef		SUPPORT_BG	
-/* The application updates the screen when receiving the message VM_MSG_PAINT 
-*  what is sent after the application is activated. The application can skip 
-*  the process on screen when the VM_MSG_ACTIVE or VM_MSG_INACTIVE is received.
-	*/
-	switch (message) {
-	case VM_MSG_CREATE:	/* the message of creation of application */
-		/* the GDI operation is not recommended as the response of the message*/
-		break;
-	case VM_MSG_PAINT:	/* the message of asking for application to repaint screen */
-		/* cerate base layer that has same size as the screen*/
-		layer_hdl[0] = vm_graphic_create_layer(0, 0, 
-			vm_graphic_get_screen_width(),		/* get screen width */
-			vm_graphic_get_screen_height(),		/* get screen height */
-			-1);		/* -1 means layer or canvas have no transparent color */
-		
-		/* set clip area */
-		vm_graphic_set_clip(0, 0, 
-			vm_graphic_get_screen_width(), 
-			vm_graphic_get_screen_height());
-		
-		draw_hello();	/* draw hello world! */
-		break;
-	case VM_MSG_HIDE:	
-		/* message of application state from foreground running to background running */
-		if( layer_hdl[0] != -1 )
-		{
-			vm_graphic_delete_layer(layer_hdl[0]);
-			layer_hdl[0] = -1;
-		}
-		break;
-	case VM_MSG_QUIT:	/* the message of quit of application */
-		if( layer_hdl[0] != -1 )
-		{
-			vm_graphic_delete_layer(layer_hdl[0]);
-			layer_hdl[0] = -1;
-		}
-		
-		/* Release all resource */
-		vm_res_deinit();
-
-		break;
-	}
-#else
-	switch (message) {
-	case VM_MSG_CREATE:	/* the message of creation of application */
-	case VM_MSG_ACTIVE: /* the message of application state from inactive to active */
-		/*cerate base layer that has same size as the screen*/
-		layer_hdl[0] = vm_graphic_create_layer(0, 0, 
-			vm_graphic_get_screen_width(),		/* get screen width */
-			vm_graphic_get_screen_height(),		/* get screen height */
-			-1);		/* -1 means layer or canvas have no transparent color */
-		
-		/* set clip area*/
-		vm_graphic_set_clip(0, 0, 
-			vm_graphic_get_screen_width(), 
-			vm_graphic_get_screen_height());
-		break;
-		
-	case VM_MSG_PAINT:	/* the message of asking for application to repaint screen */
-		draw_hello();	/* draw hello world! */
-		break;
-		
-	case VM_MSG_INACTIVE:	/* the message of application state from active to inactive */
-		if( layer_hdl[0] != -1 )
-			vm_graphic_delete_layer(layer_hdl[0]);
-		
-		break;	
-	case VM_MSG_QUIT:		/* the message of quit application */
-		if( layer_hdl[0] != -1 )
-			vm_graphic_delete_layer(layer_hdl[0]);
-		
-		/* Release all resource */
-		vm_res_deinit();
-		break;	
-	}
-#endif
-}
-
-void handle_keyevt(VMINT event, VMINT keycode) {
-	/* press any key and return*/
-	if( layer_hdl[0] != -1 )
-	{
-		vm_graphic_delete_layer(layer_hdl[0]);
-		layer_hdl[0] = -1;
-	}
-	
-	vm_exit_app();		/* quit application */
-}
-
-void handle_penevt(VMINT event, VMINT x, VMINT y)
+typedef enum
 {
-	/* touch and return*/
-	if( layer_hdl[0] != -1 )
-	{
-		vm_graphic_delete_layer(layer_hdl[0]);
-		layer_hdl[0] = -1;
-	}
-	
-	vm_exit_app();		/* quit application */
+    PAGE_MENU,
+    PAGE_RAM,
+    PAGE_SCREEN
+} PAGE;
+
+PAGE page = PAGE_MENU;
+VMINT cursor = 0;
+
+const char *menu_items[] =
+{
+    "RAM Test",
+    "Screen"
+};
+
+void draw_page(void);
+
+static void text(int x,int y,const char *ascii,VMUINT16 color)
+{
+    vm_graphic_color c;
+
+    vm_ascii_to_ucs2(ucs2,256,(VMSTR)ascii);
+
+    c.vm_color_565=color;
+    vm_graphic_setcolor(&c);
+
+    vm_graphic_textout_to_layer(
+        layer,
+        x,
+        y,
+        ucs2,
+        vm_graphic_get_screen_width());
 }
 
-short s[] = {'H','e','l','l','o',',',' ','w','o','r','l','d','!',0};
+static void clear(void)
+{
+    vm_graphic_color c;
 
-static void draw_hello(void) {
-	int x;						/* string's x coordinate */
-	int y;						/* string's y coordinate */
-	int wstr_len;				/* string's length */
-	vm_graphic_color color;		/* use to set screen and text color */
-	
-	/* calculate string length*/ 
-	wstr_len = vm_graphic_get_string_width(s);
+    c.vm_color_565=COLOR_BG;
+    vm_graphic_setcolor(&c);
 
-	/* calculate string's coordinate */
-	x = (vm_graphic_get_screen_width() - wstr_len) / 2;
-	y = (vm_graphic_get_screen_height() - vm_graphic_get_character_height()) / 2;
-	
-	/* set screen color */
-	color.vm_color_565 = VM_COLOR_WHITE;
-	vm_graphic_setcolor(&color);
-	
-	/* fill rect with screen color */
-	vm_graphic_fill_rect_ex(layer_hdl[0], 0, 0, vm_graphic_get_screen_width(), vm_graphic_get_screen_height());
-	
-	/* set text color */
-	color.vm_color_565 = VM_COLOR_BLUE;
-	vm_graphic_setcolor(&color);
-	
-	/* output text to layer */
-	vm_graphic_textout_to_layer(layer_hdl[0],x, y, s, wstr_len);
-	
-	/* flush the screen with text data */
-	vm_graphic_flush_layer(layer_hdl, 1);
+    vm_graphic_fill_rect_ex(
+        layer,
+        0,
+        0,
+        vm_graphic_get_screen_width(),
+        vm_graphic_get_screen_height());
 }
 
+static void footer(const char *left,const char *right)
+{
+    int h=vm_graphic_get_character_height()+4;
+    int y=vm_graphic_get_screen_height()-h;
+
+    vm_graphic_color c;
+
+    c.vm_color_565=0x1082;
+    vm_graphic_setcolor(&c);
+
+    vm_graphic_fill_rect_ex(
+        layer,
+        0,
+        y,
+        vm_graphic_get_screen_width(),
+        h);
+
+    text(2,y+2,left,VM_COLOR_WHITE);
+
+    vm_ascii_to_ucs2(ucs2,256,(VMSTR)right);
+
+    c.vm_color_565=VM_COLOR_WHITE;
+    vm_graphic_setcolor(&c);
+
+    vm_graphic_textout_to_layer(
+        layer,
+        vm_graphic_get_screen_width()-vm_graphic_get_string_width(ucs2)-2,
+        y+2,
+        ucs2,
+        vm_graphic_get_screen_width());
+}
+
+void draw_menu(void)
+{
+    clear();
+
+    text(8,8,"Diagnostics",COLOR_SEL);
+
+    int row=vm_graphic_get_character_height()+8;
+
+    for(int i=0;i<2;i++)
+    {
+        char line[32];
+
+        if(i==cursor)
+            sprintf(line,"> %s",menu_items[i]);
+        else
+            sprintf(line,"  %s",menu_items[i]);
+
+        text(
+            8,
+            40+i*row,
+            line,
+            i==cursor?COLOR_SEL:COLOR_TEXT);
+    }
+
+    footer("Select","Exit");
+
+    vm_graphic_flush_layer(&layer,1);
+}
+
+void draw_ram(void)
+{
+    clear();
+
+    malloc_stat_t *m=vm_get_malloc_stat();
+
+    char buf[64];
+
+    text(8,8,"Heap Information",COLOR_SEL);
+
+    sprintf(buf,"Current : %d",m->current);
+    text(8,40,buf,COLOR_TEXT);
+
+    sprintf(buf,"Peak    : %d",m->peak);
+    text(8,60,buf,COLOR_TEXT);
+
+    sprintf(buf,"Free    : %d",m->avail_heap_size);
+    text(8,80,buf,COLOR_TEXT);
+
+    sprintf(buf,"Mallocs : %d",m->malloc_count);
+    text(8,100,buf,COLOR_TEXT);
+
+    sprintf(buf,"Frees   : %d",m->free_count);
+    text(8,120,buf,COLOR_TEXT);
+
+    sprintf(buf,"MRE Mem : %u",vm_get_mre_total_mem_size());
+    text(8,140,buf,COLOR_TEXT);
+
+    footer("","Back");
+
+    vm_graphic_flush_layer(&layer,1);
+}
+
+void draw_screen(void)
+{
+    clear();
+
+    char buf[64];
+
+    int w=vm_graphic_get_screen_width();
+    int h=vm_graphic_get_screen_height();
+
+    text(8,8,"Screen Information",COLOR_SEL);
+
+    sprintf(buf,"Width  : %d px",w);
+    text(8,40,buf,COLOR_TEXT);
+
+    sprintf(buf,"Height : %d px",h);
+    text(8,60,buf,COLOR_TEXT);
+
+    sprintf(buf,"Center : %d,%d",w/2,h/2);
+    text(8,80,buf,COLOR_TEXT);
+
+    text(8,100,"Color  : RGB565",COLOR_TEXT);
+
+    text(8,120,"Layer  : Primary",COLOR_TEXT);
+
+    footer("","Back");
+
+    vm_graphic_flush_layer(&layer,1);
+}
+
+void draw_page(void)
+{
+    switch(page)
+    {
+        case PAGE_MENU:
+            draw_menu();
+            break;
+
+        case PAGE_RAM:
+            draw_ram();
+            break;
+
+        case PAGE_SCREEN:
+            draw_screen();
+            break;
+    }
+}
+
+void handle_keyevt(VMINT event,VMINT key)
+{
+    if(event!=VM_KEY_EVENT_DOWN)
+        return;
+
+    switch(page)
+    {
+        case PAGE_MENU:
+
+            switch(key)
+            {
+                case VM_KEY_UP:
+
+                    if(cursor>0)
+                        cursor--;
+
+                    break;
+
+                case VM_KEY_DOWN:
+
+                    if(cursor<1)
+                        cursor++;
+
+                    break;
+
+                case VM_KEY_OK:
+
+                    if(cursor==0)
+                        page=PAGE_RAM;
+                    else
+                        page=PAGE_SCREEN;
+
+                    break;
+
+                case VM_KEY_RIGHT_SOFTKEY:
+
+                    vm_exit_app();
+                    return;
+            }
+
+            break;
+
+        case PAGE_RAM:
+        case PAGE_SCREEN:
+
+            if(key==VM_KEY_LEFT_SOFTKEY ||
+               key==VM_KEY_RIGHT_SOFTKEY ||
+               key==VM_KEY_BACK)
+            {
+                page=PAGE_MENU;
+            }
+
+            break;
+    }
+
+    draw_page();
+}
+
+void handle_penevt(VMINT e,VMINT x,VMINT y)
+{
+}
+
+void handle_sysevt(VMINT msg,VMINT param)
+{
+    switch(msg)
+    {
+        case VM_MSG_PAINT:
+
+            if(layer==-1)
+            {
+                layer=vm_graphic_create_layer(
+                    0,
+                    0,
+                    vm_graphic_get_screen_width(),
+                    vm_graphic_get_screen_height(),
+                    -1);
+
+                vm_graphic_set_clip(
+                    0,
+                    0,
+                    vm_graphic_get_screen_width(),
+                    vm_graphic_get_screen_height());
+            }
+
+            draw_page();
+            break;
+
+        case VM_MSG_HIDE:
+
+            if(layer!=-1)
+            {
+                vm_graphic_delete_layer(layer);
+                layer=-1;
+            }
+
+            break;
+
+        case VM_MSG_QUIT:
+
+            if(layer!=-1)
+            {
+                vm_graphic_delete_layer(layer);
+                layer=-1;
+            }
+
+            break;
+    }
+}
+
+void vm_main(void)
+{
+    vm_reg_sysevt_callback(handle_sysevt);
+    vm_reg_keyboard_callback(handle_keyevt);
+    vm_reg_pen_callback(handle_penevt);
+}
