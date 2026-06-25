@@ -23,7 +23,7 @@ LINK_PARAM = -fno-threadsafe-statics -Wl,--gc-sections -fpic -fpcc-struct-return
 
 # ______________________________________________________________________________
 # 
-all: build $(APP_FILE_NAME).vxp
+all: build $(APP_FILE_NAME)_patched.vxp
 
 # 1. Compile
 build/%.o: src/%.c
@@ -43,6 +43,9 @@ build/$(APP_FILE_NAME).vxp: build/$(APP_FILE_NAME).axf
 # 4. Add tags
 $(APP_FILE_NAME).vxp: build/$(APP_FILE_NAME).vxp
 	$(PYTHON) $(SDK)/build.py $^ $@
+# 5. Patch VXP using IMSI from imsi.txt
+$(APP_FILE_NAME)_patched.vxp: $(APP_FILE_NAME).vxp imsi.txt
+	$(PYTHON) tools/vxpatch.py $< $@
 
 build:
 	mkdir -p build

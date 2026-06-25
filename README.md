@@ -21,8 +21,11 @@ On Windows, you can download and run [w64devkit](https://github.com/skeeto/w64de
 * ARM GCC
 
 ## How to use
-* `make` - compiles project and creates VXP in the project root folder
-* `make clean` - deletes any compilation data
+* Create `imsi.txt` and enter your sim's imsi code. It should be 15 digits long.
+    > To find imsi code read this [post](https://stackoverflow.com/a/72823567).
+
+* `make` - Compiles project and creates VXP in the project root folder
+* `make clean` - Deletes any compilation data
 
 ## License
 The Makefile and build.py script are MIT licensed, other files may have their own licensing terms.
