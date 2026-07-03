@@ -1,1 +1,0 @@
-/home/cipl1192/sandbox/mre-makefile/clean_app/target/armv5te-unknown-linux-gnueabi/release/libclean_app.a: /home/cipl1192/sandbox/mre-makefile/clean_app/src/app.rs /home/cipl1192/sandbox/mre-makefile/clean_app/src/mre_bindings.rs
