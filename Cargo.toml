@@ -1,6 +1,6 @@
 [package]
 name = "cargo-mre"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 description = "A framework generator for creating MRE (MediaTek) apps in Rust"
 license = "MIT"

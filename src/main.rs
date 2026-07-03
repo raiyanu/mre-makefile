@@ -208,9 +208,14 @@ fn build_project() {
     vxp_data.extend_from_slice(&tags_data);
 
     // 7. vxpatch
-    let imsi = fs::read_to_string("imsi.txt").unwrap_or_else(|_| {
-        fs::read_to_string("target/mre-sdk/imsi.txt.example").unwrap_or_else(|_| "000000000000000".to_string())
-    });
+    let manifest = fs::read_to_string("manifest.json").unwrap_or_default();
+    let imsi_val = manifest
+        .lines()
+        .find(|line| line.contains("\"imsi\""))
+        .and_then(|line| line.split('"').nth(3))
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "000000000000000".to_string());
+    let imsi = imsi_val.trim();
     let imsi = imsi.trim();
     let patched_data = patch_vxp(vxp_data, imsi);
     
