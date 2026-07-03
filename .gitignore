@@ -5,3 +5,7 @@
 *.axf
 *.vxp
 imsi.txt
+
+# Added by cargo
+
+/target
