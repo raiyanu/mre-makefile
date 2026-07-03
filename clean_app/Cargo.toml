@@ -1,0 +1,20 @@
+[package]
+name = "clean_app"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+name = "clean_app"
+path = "src/app.rs"
+
+[build-dependencies]
+bindgen = "0.69.4"
+
+[dependencies]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
