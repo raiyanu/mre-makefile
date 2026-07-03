@@ -27,6 +27,9 @@ fn main() {
 
     TEMPLATE.extract(&project_dir).expect("Failed to extract template files");
 
+    // Rename Cargo.toml.tmpl to Cargo.toml
+    fs::rename(project_dir.join("Cargo.toml.tmpl"), project_dir.join("Cargo.toml")).unwrap();
+
     // Modify Cargo.toml
     let cargo_toml_path = project_dir.join("Cargo.toml");
     let cargo_toml = fs::read_to_string(&cargo_toml_path).unwrap();
