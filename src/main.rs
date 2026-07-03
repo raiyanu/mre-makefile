@@ -16,6 +16,54 @@ fn write_u32(data: &mut [u8], offset: usize, value: u32) {
     data[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
 
+fn fix_resource_offsets(axf: &mut [u8]) {
+    let signature = b"\x41\x70\x70\x4C\x6F\x67\x6F\x2E\x69\x6D\x67\x00\x30\x00\x00\x00\xE0";
+    let mut res_offset = None;
+    for i in 0..=axf.len().saturating_sub(signature.len()) {
+        if &axf[i..i + signature.len()] == signature {
+            res_offset = Some(i);
+            break;
+        }
+    }
+
+    let res_offset = res_offset.expect("Resource offset not found");
+    let mut pos = res_offset;
+
+    loop {
+        let mut oldpos = pos;
+        while axf[pos] != 0 {
+            pos += 1;
+        }
+        pos += 1;
+
+        if axf[pos - 2] == 0 {
+            break;
+        }
+
+        let offset = read_u32(axf, pos);
+        write_u32(axf, pos, offset + (res_offset as u32));
+        pos += 8;
+    }
+
+    let mut res2_offset = read_u32(axf, pos);
+    res2_offset += res_offset as u32;
+    write_u32(axf, pos, res2_offset);
+
+    pos = res2_offset as usize;
+    loop {
+        let id = read_u32(axf, pos);
+        pos += 4;
+
+        let offset = read_u32(axf, pos);
+        write_u32(axf, pos, offset + (res_offset as u32));
+        pos += 4;
+
+        if id == 0xFFFFFFFF {
+            break;
+        }
+    }
+}
+
 fn patch_vxp(mut data: Vec<u8>, imsi: &str) -> Vec<u8> {
     let imsi_str = format!("9{}", imsi);
     let imsi_bytes = imsi_str.as_bytes();
@@ -202,10 +250,20 @@ fn build_project() {
         process::exit(1);
     }
 
-    // 6. append tags.bin
+    // 6. append tags.bin and fix resources
     let mut vxp_data = fs::read(&vxp_path).unwrap();
+    fix_resource_offsets(&mut vxp_data);
+    let axf_len = vxp_data.len();
+
     let tags_data = fs::read(sdk_dir.join("sdk/tags.bin")).unwrap_or_else(|_| vec![]);
     vxp_data.extend_from_slice(&tags_data);
+
+    // Fix tags_pos in the footer
+    let vxp_len = vxp_data.len();
+    write_u32(&mut vxp_data, vxp_len - 12, axf_len as u32);
+
+    let out_file_unpatched = format!("{}.vxp", project_name);
+    fs::write(&out_file_unpatched, &vxp_data).expect("Failed to write unpatched vxp");
 
     // 7. vxpatch
     let manifest = fs::read_to_string("manifest.json").unwrap_or_default();
@@ -216,14 +274,14 @@ fn build_project() {
         .map(|s| s.to_string())
         .unwrap_or_else(|| "000000000000000".to_string());
     let imsi = imsi_val.trim();
-    let imsi = imsi.trim();
-    let patched_data = patch_vxp(vxp_data, imsi);
     
-    // Write final output to project directory
-    let out_file = format!("{}.vxp", project_name);
-    fs::write(&out_file, patched_data).expect("Failed to write final vxp");
+    let patched_data = patch_vxp(vxp_data, imsi);
 
-    println!("Successfully built {}!", out_file);
+    // Write final output to project directory
+    let out_file_patched = format!("{}_patched.vxp", project_name);
+    fs::write(&out_file_patched, patched_data).expect("Failed to write final vxp");
+
+    println!("Successfully built {} and {}!", out_file_unpatched, out_file_patched);
 }
 
 fn main() {
