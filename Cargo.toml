@@ -2,6 +2,9 @@
 name = "create-mre-app"
 version = "0.1.0"
 edition = "2024"
+description = "A framework generator for creating MRE (MediaTek) apps in Rust"
+license = "MIT"
+include = ["src/**/*", "template/**/*", "Cargo.toml", "README.md", "LICENSE"]
 
 [dependencies]
 include_dir = "0.7.4"
